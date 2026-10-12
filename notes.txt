@@ -1,1 +1,1 @@
-hello
+schedule: daily
