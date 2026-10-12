@@ -1,1 +1,1 @@
-shedule: hourly
+schedule: daily
