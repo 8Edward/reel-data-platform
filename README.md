@@ -1,11 +1,13 @@
 # reel-data-platform
 Data platform: MovieLens + TMDB -> Postgres -> Airflow -> dbt
 
-## Структура
+## Project structure
 
-- `dags/` — DAG Airflow
-- `dbt/` — модели dbt
-- `src/` — Python-код загрузки данных
+- `src/reel/` — Python package: MovieLens/TMDB loaders
+- `tests/` — pytest tests
+- `docker/` — Dockerfile and Compose files (Airflow, ClickHouse)
+- `dags/` — Airflow DAGs
+- `dbt/` — dbt project (staging -> core -> marts)
 
 ## Data sources
 
