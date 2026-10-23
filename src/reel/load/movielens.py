@@ -1,8 +1,10 @@
 from pathlib import Path
+from itertools import batched
 import csv
 
 EXPECTED_HEADER = ["userId", "movieId", "rating", "timestamp"]
 ALLOWED_RATINGS = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0}
+BATCH_SIZE = 50_000
 
 
 def read_ratings(path):
@@ -44,6 +46,10 @@ if __name__ == "__main__":
     data_dir = Path("D:/data/movielens-25m/ml-25m")
     path = data_dir / "ratings.csv"
     stats = {"good": 0, "bad": 0}
-    for row in valid_ratings(read_ratings(path), stats):
-        pass
+    for n, batch in enumerate(
+        batched(valid_ratings(read_ratings(path), stats), BATCH_SIZE), start=1
+    ):
+        if n % 20 == 0:
+            print(f"{n * BATCH_SIZE:,} rows processed, {n} batches processed")
     print(stats)
+    print(f"batches: {n}, last batch size: {len(batch)}")
