@@ -1,0 +1,14 @@
+import os
+
+import psycopg
+
+
+def connect():
+    """Open a Postgres connection using PG_* environment variables."""
+    return psycopg.connect(
+        host=os.environ["PG_HOST"],
+        port=os.environ["PG_PORT"],
+        dbname=os.environ["PG_DB"],
+        user=os.environ["PG_USER"],
+        password=os.environ["PG_PASSWORD"],
+    )
