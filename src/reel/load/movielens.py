@@ -2,13 +2,13 @@ import csv
 from itertools import batched
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-from reel.db import connect
+from reel.db import run_sql_file
 
 EXPECTED_HEADER = ["userId", "movieId", "rating", "timestamp"]
 ALLOWED_RATINGS = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0}
 BATCH_SIZE = 50_000
+RATINGS_FILE = "ratings.csv"
+DDL_FILE = Path("sql/raw/ratings.sql")
 
 
 def read_ratings(path):
@@ -58,22 +58,19 @@ def write_batch(conn, batch):
                 copy.write_row(row)
 
 
-if __name__ == "__main__":
-    load_dotenv()
-    data_dir = Path("D:/data/movielens-25m/ml-25m")
-    path = data_dir / "ratings.csv"
+def load_ratings(conn, path):
+    """Load ratings.csv into raw.ratings in batches and return info (loaded_rows, stats)."""
     stats = {"good": 0, "bad": 0}
     loaded = 0
-    with connect() as conn:
-        conn.execute("TRUNCATE raw.ratings")
-        for n, batch in enumerate(
-            batched(valid_ratings(read_ratings(path), stats), BATCH_SIZE), start=1
-        ):
-            write_batch(conn, batch)
-            loaded += len(batch)
-            if n % 20 == 0:
-                print(f"{loaded:,} rows processed, {n} batches processed")
-        row = conn.execute("SELECT count(*) FROM raw.ratings").fetchone()
-        print(row)
-    print(stats)
-    print(f"loaded: {loaded:,}")
+    run_sql_file(conn, DDL_FILE)
+    conn.execute("TRUNCATE raw.ratings")
+    for n, batch in enumerate(
+        batched(valid_ratings(read_ratings(path), stats), BATCH_SIZE), start=1
+    ):
+        write_batch(conn, batch)
+        loaded += len(batch)
+        if n % 20 == 0:
+            print(f"{loaded:,} rows processed, {n} batches processed")
+    row = conn.execute("SELECT count(*) FROM raw.ratings").fetchone()
+    print(row)
+    return loaded, stats
