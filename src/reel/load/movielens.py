@@ -1,8 +1,11 @@
 import csv
+import logging
 from itertools import batched
 from pathlib import Path
 
 from reel.db import run_sql_file
+
+log = logging.getLogger(__name__)
 
 EXPECTED_HEADER = ["userId", "movieId", "rating", "timestamp"]
 ALLOWED_RATINGS = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0}
@@ -70,7 +73,9 @@ def load_ratings(conn, path):
         write_batch(conn, batch)
         loaded += len(batch)
         if n % 20 == 0:
-            print(f"{loaded:,} rows processed, {n} batches processed")
+            log.info("%s rows processed, %s batches", loaded, n)
     row = conn.execute("SELECT count(*) FROM raw.ratings").fetchone()
-    print(row)
+    log.debug("count(*) = %s", row[0])
+    if stats["bad"]:
+        log.warning("%s bad rows skipped", stats["bad"])
     return loaded, stats
