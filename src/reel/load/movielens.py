@@ -1,6 +1,6 @@
 import csv
 import logging
-from itertools import batched
+from itertools import batched, islice
 from pathlib import Path
 
 from reel.db import run_sql_file
@@ -61,14 +61,17 @@ def write_batch(conn, batch):
                 copy.write_row(row)
 
 
-def load_ratings(conn, path):
+def load_ratings(conn, path, limit=None):
     """Load ratings.csv into raw.ratings in batches and return info (loaded_rows, stats)."""
     stats = {"good": 0, "bad": 0}
     loaded = 0
     run_sql_file(conn, DDL_FILE)
     conn.execute("TRUNCATE raw.ratings")
+    rows = valid_ratings(read_ratings(path), stats)
+    if limit is not None:
+        rows = islice(rows, limit)
     for n, batch in enumerate(
-        batched(valid_ratings(read_ratings(path), stats), BATCH_SIZE), start=1
+        batched(rows, BATCH_SIZE), start=1
     ):
         write_batch(conn, batch)
         loaded += len(batch)

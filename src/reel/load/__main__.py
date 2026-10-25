@@ -21,6 +21,7 @@ def main():
     )
     parser = argparse.ArgumentParser(prog="reel.load")
     parser.add_argument("source", choices=["movielens"])
+    parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
     load_dotenv()
     if args.source == "movielens":
@@ -29,8 +30,10 @@ def main():
         if not path.exists():
             log.error("file not found: %s", path)
             return 1
+        if args.limit is not None:
+            log.info("limit %s rows is set", args.limit)
         with connect() as conn:
-            loaded, stats = load_ratings(conn, path)
+            loaded, stats = load_ratings(conn, path, args.limit)
         log.info("loaded %s rows, stats: %s", loaded, stats)
         log.info("finished in %.1f s", time.perf_counter() - t0)
         return 0
