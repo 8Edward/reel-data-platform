@@ -11,7 +11,7 @@ EXPECTED_HEADER = ["userId", "movieId", "rating", "timestamp"]
 ALLOWED_RATINGS = {0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0}
 BATCH_SIZE = 50_000
 RATINGS_FILE = "ratings.csv"
-DDL_FILE = Path("sql/raw/ratings.sql")
+DDL_FILE = Path(__file__).resolve().parents[3] / "sql" / "raw" / "ratings.sql"
 
 
 def read_ratings(path):
@@ -70,9 +70,7 @@ def load_ratings(conn, path, limit=None):
     rows = valid_ratings(read_ratings(path), stats)
     if limit is not None:
         rows = islice(rows, limit)
-    for n, batch in enumerate(
-        batched(rows, BATCH_SIZE), start=1
-    ):
+    for n, batch in enumerate(batched(rows, BATCH_SIZE), start=1):
         write_batch(conn, batch)
         loaded += len(batch)
         if n % 20 == 0:
