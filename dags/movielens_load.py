@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import timedelta
 
 import pendulum
-from airflow.sdk import dag, task, Param, PokeReturnValue, chain
+from airflow.sdk import dag, task, Param, PokeReturnValue, chain, Connection
 
 log = logging.getLogger("airflow.task")
 RATINGS_PATH = Path(os.environ["MOVIELENS_DIR"]) / "ratings.csv"
@@ -36,11 +36,14 @@ def movielens_load():
     @task
     def load(params: dict | None = None) -> dict:
         """Load ratings.csv into the database."""
-        from reel.db import connect
+        from reel.db import connect_with
         from reel.load.movielens import load_ratings
 
+        c = Connection.get("reel_pg")
         limit = params["limit"]
-        with connect() as conn:
+        with connect_with(
+            host=c.host, port=c.port, dbname=c.schema, user=c.login, password=c.password
+        ) as conn:
             loaded, stats = load_ratings(conn, RATINGS_PATH, limit=limit)
         log.info("loaded %s rows, stats: %s", loaded, stats)
         return {"loaded": loaded, "stats": stats}
@@ -48,9 +51,12 @@ def movielens_load():
     @task(retries=0)
     def report(result: dict):
         """Check that raw.ratings row count matches the loaded count."""
-        from reel.db import connect
+        from reel.db import connect_with
 
-        with connect() as conn:
+        c = Connection.get("reel_pg")
+        with connect_with(
+            host=c.host, port=c.port, dbname=c.schema, user=c.login, password=c.password
+        ) as conn:
             row = conn.execute("SELECT count(*) FROM raw.ratings").fetchone()
         if result["loaded"] != row[0]:
             raise ValueError(f"expected {result['loaded']} rows, found {row[0]}")
